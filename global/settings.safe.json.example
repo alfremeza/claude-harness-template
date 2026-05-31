@@ -23,6 +23,7 @@
       "Read",
       "Edit",
       "Write",
+      "MultiEdit",
       "Glob",
       "Grep"
     ],
