@@ -155,37 +155,65 @@ The matcher `"Bash|Edit|Write"` means the hook only fires on operations that cha
 
 This gives your memory system persistence and backup across devices (Mac, VPS, etc.).
 
+> **⚠ Important:** Use a dedicated directory (`~/.claude-brain/`), **not** `git init` in your home directory `$HOME`. Git in `$HOME` can cause unexpected behavior with other tools that scan for `.git` (IDEs, shell prompts, other CLIs). A dedicated directory is cleaner and safer.
+
 ```bash
-# 1. Initialize git in your home directory
-cd ~
+# 1. Create a dedicated brain directory
+mkdir -p ~/.claude-brain
+
+# 2. Copy your Claude memory into it
+cp -r ~/.claude/projects ~/.claude-brain/
+cp ~/.claude/CLAUDE.md ~/.claude-brain/
+cp ~/.claude/settings.json ~/.claude-brain/
+
+# 3. Initialize git in the brain directory
+cd ~/.claude-brain
 git init
-echo "# Brain repo" > README.md
+echo "# Claude Brain — private memory sync" > README.md
 
-# 2. Create a .gitignore that only tracks Claude memory
-cat > ~/.gitignore << 'EOF'
-# Track only Claude memory and config
-*
-!.gitignore
-!README.md
-!.claude/
-.claude/cache/
-.claude/history.jsonl
-.claude/sessions/
-.claude/telemetry/
-.claude/shell-snapshots/
-.claude/ide/
-.claude/debug/
-.claude/downloads/
-.claude/paste-cache/
-.claude/file-history/
-.claude/homunculus/
-EOF
+# 4. Create a PRIVATE repo on GitHub (github.com/new)
+# Name it: yourname-brain (private!)
 
-# 3. Create a PRIVATE repo on GitHub (github.com/new)
-# Name it: alfred-brain (or yourname-brain)
-
-# 4. Connect and push
+# 5. Connect and push
 git remote add origin https://github.com/YOURUSER/YOURNAME-brain.git
+git add .
+git commit -m "init: harness brain repo"
+git push -u origin main
+```
+
+Then update your SessionStart and SessionEnd hooks to point to `~/.claude-brain/`:
+
+```json
+"SessionStart": [{
+  "hooks": [{
+    "command": "cd ~/.claude-brain && git pull --rebase 2>/dev/null || true"
+  }]
+}],
+"SessionEnd": [{
+  "hooks": [{
+    "command": "cd ~/.claude-brain && git add . && git diff --cached --quiet || git commit -m 'auto: session end' && git push 2>/dev/null || true",
+    "async": true
+  }]
+}]
+```
+
+**Multi-device sync:** On VPS or other machines, clone into `~/.claude-brain/` and symlink the memory:
+
+```bash
+# On VPS:
+git clone https://github.com/YOURUSER/YOURNAME-brain.git ~/.claude-brain
+mkdir -p ~/.claude/projects
+ln -sf ~/.claude-brain/projects ~/.claude/projects
+```
+
+**Why private?** Your CLAUDE.md may contain personal info, your memory files contain project details and feedback. Keep it private.
+
+> **Note — if you already use git in $HOME:** It works but carries risk. Any tool that detects `.git` in parent directories (IDEs, shell themes, some CLIs) may behave unexpectedly when you're deep in a project directory. If you're comfortable with it and it's not causing issues, no need to change. For a fresh setup, prefer `~/.claude-brain/`.
+
+```bash
+# ORIGINAL approach (still works, not recommended for fresh setups):
+# cd ~
+# git init
 git add .claude/CLAUDE.md .claude/settings.json .claude/projects/
 git commit -m "init: harness setup"
 git push -u origin main

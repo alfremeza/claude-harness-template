@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
 # protect-files.sh — PreToolUse safety hook for Bash commands
 # Blocks dangerous operations on sensitive files and destructive commands.
-# Used with settings.safe.json.
+# Used with settings.safe.json (matcher: "Bash").
 #
-# Claude Code passes the tool input via stdin as JSON:
-# { "tool": "Bash", "input": { "command": "..." } }
+# Claude Code passes tool input via stdin as JSON:
+# { "tool_input": { "command": "..." } }
+# Exit 2 = block the tool call. Exit 0 = allow.
 
 set -euo pipefail
 
 INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('input',{}).get('command',''))" 2>/dev/null || echo "")
+COMMAND=$(echo "$INPUT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print(d.get('tool_input', {}).get('command', '') or d.get('input', {}).get('command', ''))
+" 2>/dev/null || echo "")
 
 # ── Sensitive files — block read and write ────────────────────────
 SENSITIVE_PATTERNS=(
@@ -30,8 +35,8 @@ SENSITIVE_PATTERNS=(
 
 for pattern in "${SENSITIVE_PATTERNS[@]}"; do
   if echo "$COMMAND" | grep -qiE "$pattern"; then
-    echo "BLOCK: Command touches sensitive file pattern ($pattern). Use explicit permission if intentional." >&2
-    exit 1
+    echo "BLOCK: Command touches sensitive file pattern ($pattern). Run manually if intentional." >&2
+    exit 2
   fi
 done
 
@@ -46,7 +51,6 @@ DESTRUCTIVE_PATTERNS=(
   "DROP TABLE"
   "truncate"
   "TRUNCATE"
-  "format"
   "mkfs"
   "> /dev/"
   "dd if="
@@ -54,15 +58,15 @@ DESTRUCTIVE_PATTERNS=(
 
 for pattern in "${DESTRUCTIVE_PATTERNS[@]}"; do
   if echo "$COMMAND" | grep -qF "$pattern"; then
-    echo "BLOCK: Destructive command pattern detected ($pattern). Run manually if intentional." >&2
-    exit 1
+    echo "BLOCK: Destructive command ($pattern). Run manually if intentional." >&2
+    exit 2
   fi
 done
 
 # ── Dangerous pipe patterns ───────────────────────────────────────
 if echo "$COMMAND" | grep -qE "curl.*(sh|bash|python)|wget.*(sh|bash|python)|\| bash|\| sh|\| python"; then
   echo "BLOCK: Piping remote content to shell interpreter is not allowed." >&2
-  exit 1
+  exit 2
 fi
 
 # ── Allow ─────────────────────────────────────────────────────────

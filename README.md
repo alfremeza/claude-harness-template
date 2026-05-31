@@ -28,7 +28,7 @@ Never use a single agent for everything. Use focused roles with minimal context 
 | **explorer** | Read-only. Understand the codebase before touching anything. |
 | **planner** | Propose changes with exact files and line numbers. |
 | **implementer** | Apply the change. Nothing else. |
-| **reviewer** | Review diff for correctness and risks. |
+| **reviewer** | Review diff for correctness and AGENTS.md compliance. |
 | **verifier** | Run `verify.sh`. Must PASS before declaring done. |
 
 ### 3. Mandatory Verification
@@ -36,38 +36,58 @@ The AI cannot declare "I'm done" without proof. Every project needs a `verify.sh
 
 ---
 
-## Repository Contents
+## Repository Structure
 
 ```
 claude-harness-template/
 │
+├── agents/                          ← 5 real agent files with protocols
+│   ├── explorer.md                  # read-only codebase mapper
+│   ├── planner.md                   # line-level implementation planner
+│   ├── implementer.md               # focused executor, scope discipline
+│   ├── reviewer.md                  # AGENTS.md compliance + correctness
+│   └── verifier.md                  # binary quality gate sign-off
+│
+├── commands/                        ← 3 slash commands
+│   ├── onboard-project.md           # /onboard-project — interactive project setup
+│   ├── memory-review.md             # /memory-review — monthly memory audit
+│   └── harness-check.md             # /harness-check — full health check
+│
 ├── global/
-│   ├── CLAUDE.md.example        # Global system prompt template
-│   └── settings.json.example    # Hooks configuration (SessionStart, PostCompact, SessionEnd)
+│   ├── CLAUDE.md.example            # global system prompt template
+│   ├── settings.fast.json.example   # unrestricted Bash — power users, solo devs
+│   ├── settings.safe.json.example   # allowlist + security hooks — teams, sensitive data
+│   └── hooks/
+│       ├── protect-files.sh         # PreToolUse/Bash — blocks dangerous commands (exit 2)
+│       └── protect-paths.sh         # PreToolUse/Edit|Write — blocks sensitive file paths
 │
 ├── project/
-│   ├── AGENTS.md.template       # Per-project harness template (fill in for every project)
+│   ├── AGENTS.md.template           # per-project harness template
 │   └── scripts/
-│       └── verify.sh.template   # Quality gate template (Python + Node + VPS variants)
+│       ├── verify.python.sh         # pytest + syntax + env vars
+│       ├── verify.node.sh           # vitest/jest + TypeScript + lint
+│       ├── verify.fullstack.sh      # Python backend + Node frontend
+│       ├── verify.vps.sh            # pytest + systemd + env vars
+│       └── verify.minimal.sh        # syntax only — upgrade path included
 │
 ├── examples/
-│   ├── web-app/
-│   │   └── AGENTS.md            # Full-stack app example (Vue 3 + FastAPI + WeasyPrint)
-│   ├── telegram-bot/
-│   │   └── AGENTS.md            # Telegram bot example (Python + Claude API + Drive)
-│   └── vps-service/
-│       └── verify.sh            # VPS service quality gate (pytest + systemd + env vars)
+│   ├── web-app/AGENTS.md            # full-stack example (Vue 3 + FastAPI)
+│   ├── telegram-bot/AGENTS.md       # Python bot + Claude API + Drive
+│   └── vps-service/verify.sh        # VPS quality gate example
 │
 ├── skills/
 │   └── harness-engineering/
-│       └── SKILL.md             # Invocable Claude Code skill — full reference guide
+│       └── SKILL.md                 # invocable Claude Code skill — full reference
+│
+├── scripts/
+│   └── install.sh                   # one-command automated setup
 │
 └── docs/
-    ├── philosophy.md            # Deep dive: why harnesses matter more than models
-    ├── global-setup.md          # Step-by-step: set up your global harness from scratch
-    ├── project-onboarding.md    # How to onboard any project to the harness
-    ├── memory-system.md         # Memory architecture, types, git sync, maintenance
-    └── skills-guide.md          # What skills to install, what to remove, how to curate
+    ├── philosophy.md                # why harnesses matter more than models
+    ├── global-setup.md              # step-by-step from zero to working harness
+    ├── project-onboarding.md        # how to add any project to the harness
+    ├── memory-system.md             # memory types, git sync, maintenance
+    └── skills-guide.md              # what to install, what to remove, how to curate
 ```
 
 ---
@@ -76,37 +96,75 @@ claude-harness-template/
 
 ### New to harnesses — start here
 
-1. Read `docs/philosophy.md` — understand why this works (10 min)
-2. Follow `docs/global-setup.md` — set up your global harness step by step
-3. Add your first project: `docs/project-onboarding.md`
+```bash
+git clone https://github.com/alfremeza/claude-harness-template
+bash claude-harness-template/scripts/install.sh
+```
+
+The install script will:
+- Check prerequisites (Claude Code, git)
+- Create `~/.claude/` structure
+- Prompt you to choose **fast** (unrestricted) or **safe** (allowlist + security hooks) profile
+- Install agents, commands, and the harness-engineering skill
+- Set up the memory system
+- Guide you through creating your brain repo
 
 ### Already using Claude Code — upgrade your setup
 
-1. Check your `~/.claude/CLAUDE.md` against `global/CLAUDE.md.example` — fill gaps
-2. Configure hooks: copy relevant sections from `global/settings.json.example`
-3. For each active project: create `AGENTS.md` and `scripts/verify.sh`
+1. Copy the relevant settings profile to `~/.claude/settings.json`
+2. Install agents: copy `agents/*.md` → `~/.claude/agents/`
+3. Install commands: copy `commands/*.md` → `~/.claude/commands/`
+4. Install the skill: copy `skills/harness-engineering/SKILL.md` → `~/.claude/skills/harness-engineering/`
+5. For each active project: add `AGENTS.md` and `scripts/verify.sh`
 
-### Adding the harness to a specific project
+### Adding the harness to a project
 
 ```bash
 # In your project root:
 cp path/to/project/AGENTS.md.template ./AGENTS.md
 mkdir -p scripts
-cp path/to/project/scripts/verify.sh.template ./scripts/verify.sh
+
+# Choose the right verify.sh for your stack:
+# Python:     verify.python.sh
+# Node/TS:    verify.node.sh
+# Full-stack: verify.fullstack.sh
+# VPS:        verify.vps.sh
+# No tests:   verify.minimal.sh
+
+cp path/to/project/scripts/verify.YOURTYPE.sh ./scripts/verify.sh
 chmod +x scripts/verify.sh
 
-# Edit both files for your project, then test:
+# Edit AGENTS.md and verify.sh for your project, then test:
 bash scripts/verify.sh
 ```
 
-### Installing the Claude Code skill
+---
 
-```bash
-mkdir -p ~/.claude/skills/harness-engineering
-cp skills/harness-engineering/SKILL.md ~/.claude/skills/harness-engineering/SKILL.md
-```
+## Settings Profiles
 
-Invoke in Claude Code with `/harness-engineering` whenever you need the full reference.
+Choose based on your context:
+
+| Profile | When to use | Bash access | Security hooks |
+|---|---|---|---|
+| `settings.fast.json` | Solo developer, experienced, trusted environment | Unrestricted | Observation only |
+| `settings.safe.json` | Teams, medical/financial data, beginners, VPS with sensitive credentials | Allowlist | protect-files.sh + protect-paths.sh |
+
+**Recommendation:** If you work with patient data, API keys for financial services, or shared VPS credentials — use `settings.safe.json`. The friction is minimal; the protection is real.
+
+### How the security hooks work
+
+`protect-files.sh` (matcher: `Bash`) — blocks commands that touch:
+- `.env`, `.pem`, `.key`, `credentials.json`, `id_rsa`
+- `rm -rf`, `git reset --hard`, `git push --force`
+- Pipe-to-shell patterns (`curl ... | bash`)
+- Uses **exit 2** (Claude Code hook block code)
+
+`protect-paths.sh` (matcher: `Edit|Write`) — blocks writes to:
+- `.env`, `.pem`, `.key`, `credentials.json`, `secrets.*`
+- Private key files, service account files
+- Uses **exit 2**
+
+Both hooks parse `tool_input.command` / `tool_input.file_path` with fallback to `input.*` for compatibility.
 
 ---
 
@@ -116,44 +174,31 @@ Invoke in Claude Code with `/harness-engineering` whenever you need the full ref
 Give your AI simple, general tools — not hundreds of specialized ones. The index of available skills appears in every session. 200–320 skills is the sweet spot; 400+ adds noise. See `docs/skills-guide.md`.
 
 ### Context degrades at 40%
-AI quality degrades well before the context window fills. Run `/compact` proactively around 40% context usage, not reactively when things go wrong.
+AI quality degrades well before the context window fills. Run `/compact` proactively around 40% context usage.
 
 ### Memory outside the window
-Store context in files (`AGENTS.md`, `memory/`, `progress/`), not in the conversation. The conversation window is expensive and volatile. Files are cheap and persistent.
+Store context in files (`AGENTS.md`, `memory/`, `progress/`), not in the conversation. Files are cheap and persistent. The context window is expensive and volatile.
 
 ### Hooks: target, don't blanket
-Use `"Bash|Edit|Write"` as the hook matcher, not `"*"`. Observation hooks on every Read/Glob/Grep add latency without value — only changes matter.
+Use `"Bash|Edit|Write"` as the observation hook matcher, not `"*"`. Hooks on every Read/Glob/Grep add latency without value.
+
+### Brain repo: dedicated directory, not $HOME
+The memory sync pattern works best with a dedicated directory (e.g., `~/.claude-brain/`) rather than `git init` in `$HOME`. Git in home can cause unexpected behavior with other tools that check for `.git`. See `docs/global-setup.md` for the recommended approach.
 
 ### Verify, don't trust
-Claude is trained to be helpful and complete tasks — it will tend to declare success. A `verify.sh` is the only objective signal that something is actually done.
+A `verify.sh` is the only objective signal that something is done. Use **exit 2** in PreToolUse hooks to block — exit 1 signals an error but does not block in Claude Code.
 
 ---
 
 ## Project Types Covered
 
-| Project Type | Template Location |
+| Project Type | verify.sh |
 |---|---|
-| Full-stack web app (Vue/React + FastAPI/Django) | `examples/web-app/AGENTS.md` |
-| Telegram/WhatsApp automation bot | `examples/telegram-bot/AGENTS.md` |
-| VPS-deployed Python service | `examples/vps-service/verify.sh` |
-| Generic project | `project/AGENTS.md.template` |
-
----
-
-## The Memory System
-
-The harness includes a persistent memory system that survives across sessions and devices:
-
-```
-~/.claude/projects/memory/
-├── MEMORY.md            ← index (one line per memory, max 200 lines)
-├── user_*.md            ← who you are, your expertise, preferences
-├── feedback_*.md        ← corrections and confirmed approaches
-├── project_*.md         ← state of ongoing projects
-└── reference_*.md       ← where external resources live
-```
-
-Memory syncs across devices via a private git repo (the "brain repo" pattern). See `docs/memory-system.md` for full setup.
+| Python (Flask, FastAPI, scripts) | `verify.python.sh` |
+| Node/TypeScript (Next.js, Express, etc.) | `verify.node.sh` |
+| Full-stack (Vue/React + Python API) | `verify.fullstack.sh` |
+| VPS-deployed service (systemd) | `verify.vps.sh` |
+| No tests yet | `verify.minimal.sh` |
 
 ---
 
@@ -161,14 +206,17 @@ Memory syncs across devices via a private git repo (the "brain repo" pattern). S
 
 **Global harness:**
 - [ ] `~/.claude/CLAUDE.md` — profile, stack, projects, domain rules
-- [ ] `~/.claude/settings.json` — SessionStart, PreToolUse (Bash|Edit|Write), PostCompact, SessionEnd hooks
-- [ ] Private git repo ("brain repo") for memory sync
+- [ ] `~/.claude/settings.json` — choose fast or safe profile, all hooks configured
+- [ ] Security hooks installed: `~/.claude/hooks/protect-files.sh` + `protect-paths.sh`
+- [ ] Brain repo set up (dedicated `~/.claude-brain/`, not `$HOME`)
 - [ ] `memory/MEMORY.md` created as index
-- [ ] Superpowers plugin installed
-- [ ] Skills curated to 200–320 relevant to your stack
+- [ ] Agents installed: `~/.claude/agents/` (5 role agents)
+- [ ] Commands installed: `~/.claude/commands/`
+- [ ] Skill installed: `~/.claude/skills/harness-engineering/`
+- [ ] Skills curated to relevant domains (target: 200–320)
 
 **Per project:**
-- [ ] `AGENTS.md` in project root with all sections filled
+- [ ] `AGENTS.md` in project root — all sections filled
 - [ ] `scripts/verify.sh` created, executable, passes in clean state
 - [ ] Project in global CLAUDE.md projects table
 - [ ] Project memory file created and indexed
@@ -178,9 +226,9 @@ Memory syncs across devices via a private git repo (the "brain repo" pattern). S
 ## Contributing
 
 Contributions welcome. Most valuable:
-- `verify.sh` templates for project types not covered
-- `AGENTS.md` examples for specific frameworks (Next.js, NestJS, Laravel, etc.)
-- Documented anti-patterns discovered in real use
+- `verify.sh` variants for project types not covered
+- `AGENTS.md` examples for specific frameworks
+- Anti-patterns discovered in real use
 
 ---
 
