@@ -59,7 +59,7 @@ claude-harness-template/
 │   ├── settings.safe.json.example   # allowlist + security hooks — teams, sensitive data
 │   └── hooks/
 │       ├── protect-files.sh         # PreToolUse/Bash — blocks dangerous commands (exit 2)
-│       └── protect-paths.sh         # PreToolUse/Edit|Write — blocks sensitive file paths
+│       └── protect-paths.sh         # PreToolUse/Read|Edit|Write|MultiEdit — blocks sensitive file paths
 │
 ├── project/
 │   ├── AGENTS.md.template           # per-project harness template
@@ -80,7 +80,8 @@ claude-harness-template/
 │       └── SKILL.md                 # invocable Claude Code skill — full reference
 │
 ├── scripts/
-│   └── install.sh                   # one-command automated setup
+│   ├── install.sh                   # one-command automated setup
+│   └── smoke-test.sh                # post-install verification with hook unit tests
 │
 └── docs/
     ├── philosophy.md                # why harnesses matter more than models
@@ -111,22 +112,13 @@ The install script will:
 
 ### Smoke test after install
 
-Run these to confirm everything is in place before your first session:
+Run the automated smoke test — it checks all components and runs unit tests for the security hooks:
 
 ```bash
-# 1. Security hooks installed
-ls ~/.claude/hooks/protect-files.sh && echo "✓ protect-files.sh" || echo "✗ missing"
-ls ~/.claude/hooks/protect-paths.sh && echo "✓ protect-paths.sh" || echo "✗ missing"
-
-# 2. Agents installed
-ls ~/.claude/agents/explorer.md ~/.claude/agents/verifier.md && echo "✓ agents" || echo "✗ missing"
-
-# 3. Brain repo initialized
-cd ~/.claude-brain && git status && echo "✓ brain repo OK" || echo "✗ brain repo not set up"
-
-# 4. Memory index exists
-ls ~/.claude/projects/*/memory/MEMORY.md && echo "✓ memory index" || echo "✗ missing"
+bash claude-harness-template/scripts/smoke-test.sh
 ```
+
+It verifies: Claude Code installed, security hooks working, agents present, brain repo initialized, memory system in place. Exit 0 = ready. Exit 1 = something needs fixing.
 
 Then open Claude Code in any project and run:
 ```
@@ -186,7 +178,7 @@ Choose based on your context:
 - Pipe-to-shell patterns (`curl ... | bash`)
 - Uses **exit 2** (Claude Code hook block code)
 
-`protect-paths.sh` (matcher: `Edit|Write`) — blocks writes to:
+`protect-paths.sh` (matcher: `Read|Edit|Write|MultiEdit`) — blocks read and write access to:
 - `.env`, `.pem`, `.key`, `credentials.json`, `secrets.*`
 - Private key files, service account files
 - Uses **exit 2**
