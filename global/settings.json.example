@@ -1,0 +1,88 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd ~ && git pull --rebase 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Syncing memory repo..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/.claude/skills/continuous-learning/hooks/observe.sh pre"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/.claude/skills/continuous-learning/hooks/observe.sh post"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd ~ && git add .claude/projects/memory/ && git diff --cached --quiet || git commit -m \"auto: /compact checkpoint $(date '+%Y-%m-%d %H:%M')\" 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Saving memories..."
+          }
+        ]
+      },
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd ~ && git add .claude/projects/memory/ && git diff --cached --quiet || git commit -m \"auto: auto-compact checkpoint $(date '+%Y-%m-%d %H:%M')\" 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Saving memories (auto-compact)..."
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /path/to/.claude/session-summarizer.py",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "cd ~ && git add .claude/projects/memory/ && git diff --cached --quiet || git commit -m \"auto: session end $(date '+%Y-%m-%d %H:%M')\" 2>/dev/null || true && git push 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

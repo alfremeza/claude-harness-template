@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Quality gate — run before marking any task as done
+# Usage: bash scripts/verify.sh
+# Exit 0 = PASSED, Exit 1 = FAILED
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PASS=0
+FAIL=0
+
+echo "=== [Project Name] — Quality Gate ==="
+echo ""
+
+# ── Option A: Python backend tests (pytest + venv) ───────────────
+echo "→ Backend: pytest..."
+if "$REPO_ROOT/backend/venv/bin/python3" -m pytest "$REPO_ROOT/backend" --tb=short -q 2>&1; then
+  echo "✓ Backend OK"; PASS=$((PASS+1))
+else
+  echo "✗ Backend FAILED"; FAIL=$((FAIL+1))
+fi
+echo ""
+
+# ── Option B: Node/frontend tests (vitest/jest) ──────────────────
+echo "→ Frontend: vitest..."
+cd "$REPO_ROOT/frontend"
+if npm run test:unit -- --run 2>&1; then
+  echo "✓ Frontend OK"; PASS=$((PASS+1))
+else
+  echo "✗ Frontend FAILED"; FAIL=$((FAIL+1))
+fi
+echo ""
+
+# ── Option C: TypeScript type check ──────────────────────────────
+echo "→ TypeScript..."
+if npm run type-check 2>&1; then
+  echo "✓ TypeScript OK"; PASS=$((PASS+1))
+else
+  echo "⚠ TypeScript errors"; FAIL=$((FAIL+1))
+fi
+echo ""
+
+# ── Option D: Systemd service check (VPS bots/APIs) ─────────────
+# Uncomment and replace SERVICE_NAME:
+# echo "→ Service status..."
+# if systemctl is-active --quiet SERVICE_NAME; then
+#   echo "✓ Service OK"; PASS=$((PASS+1))
+# else
+#   echo "✗ Service is down"; FAIL=$((FAIL+1))
+# fi
+
+# ── Option E: Required env vars check ────────────────────────────
+# Uncomment and add your required vars:
+# echo "→ Environment variables..."
+# for var in ANTHROPIC_API_KEY API_KEY_2 DATABASE_URL; do
+#   if [ -z "${!var:-}" ]; then
+#     echo "✗ Missing: $var"; FAIL=$((FAIL+1))
+#   fi
+# done
+
+# ── Result ────────────────────────────────────────────────────────
+echo "================================="
+if [ "$FAIL" -eq 0 ]; then
+  echo "✓ Quality Gate PASSED ($PASS/$((PASS+FAIL)) checks)"
+  exit 0
+else
+  echo "✗ Quality Gate FAILED ($FAIL failed, $PASS passed)"
+  exit 1
+fi

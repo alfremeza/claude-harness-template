@@ -1,0 +1,37 @@
+# [Your Name] — Global Context
+
+## Who I am
+- [Your role, field, years of experience]
+- [Technical level: beginner / intermediate / advanced]
+- [Relevant specializations]
+
+## How to respond — ALWAYS
+- [Language preference]
+- [Format: bullets / paragraphs / code-first]
+- [Response style: direct / detailed / explain-first]
+- [No disclaimers on obvious things]
+- If you don't know something, say so — don't invent
+
+## Active tool stack
+- **Automation:** [tools you use]
+- **Infrastructure:** [servers, cloud, VPS]
+- **Languages:** [primary languages]
+- **Key services:** [APIs, databases, message queues]
+
+## Active projects
+| Project | Status |
+|---|---|
+| [Project A] | Operational |
+| [Project B] | In development |
+| [Project C] | Designed, pending launch |
+
+## Goals that guide decisions
+1. [Primary goal — shapes what matters]
+2. [Secondary goal]
+3. [Tertiary goal]
+
+## Domain-specific rules
+- [Any hard rules specific to your field]
+- [Data sensitivity rules — what can/cannot be sent to external APIs]
+- [Required fields in outputs]
+- [Compliance requirements if applicable]

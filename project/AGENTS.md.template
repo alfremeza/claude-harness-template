@@ -1,0 +1,56 @@
+# [Project Name] — Agent Protocol
+
+## Project
+[What it does, one sentence. Tech stack.]
+- **Production URL:** https://your-app.example.com
+- **Deploy:** `[deploy command]`
+- **Tests:** [N unit tests] + [N integration tests]
+
+## MANDATORY PROTOCOL — Before any change
+
+```bash
+bash scripts/verify.sh
+```
+
+If it fails: DO NOT continue. Fix it first. The quality gate defines "done correctly."
+
+## Architecture
+
+```
+project-root/
+├── [key-file-1]     # what it does
+├── [key-file-2]     # what it does
+├── src/
+│   ├── [module-a]/  # responsibility
+│   └── [module-b]/  # responsibility
+└── tests/           # test suite
+```
+
+## Critical Rules — Do NOT change without explicit validation
+
+- [Rule 1: business/domain/clinical rule that cannot break]
+- [Rule 2: configuration that broke things before]
+- [Rule 3: required fields in all outputs]
+- All outputs must include: [required fields]
+- Never invent missing data — mark as absent/pending
+
+## Work Pipeline
+
+1. **explorer** — read relevant code, understand what the task touches
+2. **planner** — propose change with exact files and line numbers
+3. **implementer** — apply the change
+4. **verifier** — `bash scripts/verify.sh` → must PASS before marking done
+
+## Known Historical Bugs
+
+| Bug | Cause | Fix |
+|---|---|---|
+| [Symptom] | [Root cause] | [The fix applied] |
+| [Symptom] | [Root cause] | [The fix applied] |
+
+## API Endpoints (if applicable)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | /health | Health check |
+| POST | /[endpoint] | [what it does] |
