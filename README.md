@@ -109,6 +109,33 @@ The install script will:
 - Set up the memory system
 - Guide you through creating your brain repo
 
+### Smoke test after install
+
+Run these to confirm everything is in place before your first session:
+
+```bash
+# 1. Security hooks installed
+ls ~/.claude/hooks/protect-files.sh && echo "✓ protect-files.sh" || echo "✗ missing"
+ls ~/.claude/hooks/protect-paths.sh && echo "✓ protect-paths.sh" || echo "✗ missing"
+
+# 2. Agents installed
+ls ~/.claude/agents/explorer.md ~/.claude/agents/verifier.md && echo "✓ agents" || echo "✗ missing"
+
+# 3. Brain repo initialized
+cd ~/.claude-brain && git status && echo "✓ brain repo OK" || echo "✗ brain repo not set up"
+
+# 4. Memory index exists
+ls ~/.claude/projects/*/memory/MEMORY.md && echo "✓ memory index" || echo "✗ missing"
+```
+
+Then open Claude Code in any project and run:
+```
+/harness-check
+```
+It will audit the full harness and report what's working and what's missing.
+
+---
+
 ### Already using Claude Code — upgrade your setup
 
 1. Copy the relevant settings profile to `~/.claude/settings.json`
