@@ -142,43 +142,65 @@ else
 fi
 echo ""
 
-# ── Git brain repo ────────────────────────────────────────────────
-echo "→ Git brain repo setup..."
-cd "$HOME"
+# ── Git brain repo (~/.claude-brain/) ────────────────────────────
+BRAIN_DIR="$HOME/.claude-brain"
+echo "→ Git brain repo setup ($BRAIN_DIR)..."
+mkdir -p "$BRAIN_DIR"
+cd "$BRAIN_DIR"
+
 if git rev-parse --git-dir >/dev/null 2>&1; then
-  echo "  ✓ Git already initialized in home directory"
+  echo "  ✓ Brain repo already initialized at $BRAIN_DIR"
 else
   git init
-  cat > "$HOME/.gitignore" << 'EOF'
-# Track only Claude memory and config
-*
-!.gitignore
-!README.md
-!.claude/
-.claude/cache/
-.claude/history.jsonl
-.claude/sessions/
-.claude/telemetry/
-.claude/shell-snapshots/
-.claude/ide/
-.claude/debug/
-.claude/downloads/
-.claude/paste-cache/
-.claude/file-history/
-.claude/homunculus/
-.claude/backups/
+
+  cat > "$BRAIN_DIR/.gitignore" << 'EOF'
+.DS_Store
+*.log
+*.tmp
+*.pyc
+__pycache__/
 EOF
-  echo "  ✓ Git initialized with .gitignore"
-  echo ""
-  echo "  ⚠ NEXT STEP: Create a PRIVATE repo on GitHub:"
-  echo "    1. Go to https://github.com/new"
-  echo "    2. Name it: yourname-brain (private!)"
-  echo "    3. Run:"
-  echo "       git remote add origin https://github.com/YOURUSER/YOURNAME-brain.git"
-  echo "       git add .claude/"
-  echo "       git commit -m 'init: harness setup'"
-  echo "       git push -u origin main"
+
+  echo "# Claude Brain — private memory sync" > "$BRAIN_DIR/README.md"
+  echo "  ✓ Git initialized at $BRAIN_DIR"
 fi
+
+# Copy Claude memory + config into brain dir (never secrets)
+echo "  → Syncing memory and config..."
+mkdir -p "$BRAIN_DIR/memory"
+
+# Copy MEMORY.md and all memory files
+if [ -d "$MEMORY_DIR" ]; then
+  cp -r "$MEMORY_DIR/." "$BRAIN_DIR/memory/"
+  echo "  ✓ Memory files synced"
+fi
+
+# Copy CLAUDE.md (global config — no secrets)
+[ -f "$CLAUDE_DIR/CLAUDE.md" ] && cp "$CLAUDE_DIR/CLAUDE.md" "$BRAIN_DIR/CLAUDE.md"
+
+# Copy settings.json (hooks config — no secrets, no tokens)
+[ -f "$CLAUDE_DIR/settings.json" ] && cp "$CLAUDE_DIR/settings.json" "$BRAIN_DIR/settings.json"
+
+# Initial commit
+cd "$BRAIN_DIR"
+git add . 2>/dev/null || true
+git diff --cached --quiet 2>/dev/null || git commit -m "init: harness brain setup" 2>/dev/null || true
+
+echo ""
+echo "  ⚠ NEXT STEP: Create a PRIVATE repo on GitHub and connect:"
+echo "    1. Go to https://github.com/new → name it: yourname-brain (private!)"
+echo "    2. Run:"
+echo "       cd ~/.claude-brain"
+echo "       git remote add origin https://github.com/YOURUSER/YOURNAME-brain.git"
+echo "       git push -u origin main"
+echo ""
+echo "  What goes in ~/.claude-brain/ (safe to sync):"
+echo "    ✓ memory/     — project state, feedback, references"
+echo "    ✓ CLAUDE.md   — your global profile"
+echo "    ✓ settings.json — hooks config"
+echo "    ✗ .env files  — never"
+echo "    ✗ API keys    — never"
+echo "    ✗ credentials — never"
 echo ""
 
 # ── Summary ───────────────────────────────────────────────────────
