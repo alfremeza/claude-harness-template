@@ -83,7 +83,15 @@ if [ -f "$CLAUDE_DIR/hooks/protect-files.sh" ]; then
 else
   cp "$TEMPLATE_DIR/global/hooks/protect-files.sh" "$HOOKS_DIR/protect-files.sh"
   chmod +x "$HOOKS_DIR/protect-files.sh"
-  echo "→ protect-files.sh installed: $HOOKS_DIR/protect-files.sh"
+  echo "  ✓ protect-files.sh installed"
+fi
+
+if [ -f "$HOOKS_DIR/protect-paths.sh" ]; then
+  echo "→ protect-paths.sh already exists — skipping"
+else
+  cp "$TEMPLATE_DIR/global/hooks/protect-paths.sh" "$HOOKS_DIR/protect-paths.sh"
+  chmod +x "$HOOKS_DIR/protect-paths.sh"
+  echo "  ✓ protect-paths.sh installed"
 fi
 echo ""
 
