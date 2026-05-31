@@ -1,0 +1,90 @@
+{
+  "_comment": "settings.fast.json — For experienced solo developers. Unrestricted Bash, no permission prompts. Use when you trust yourself and want zero friction. NOT recommended for teams or beginners.",
+
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep"
+    ]
+  },
+
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd $HOME && git pull --rebase 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Syncing memory..."
+          }
+        ]
+      }
+    ],
+
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$HOME/.claude/skills/continuous-learning-v2/hooks/observe.sh\" ] && $HOME/.claude/skills/continuous-learning-v2/hooks/observe.sh pre || true"
+          }
+        ]
+      }
+    ],
+
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$HOME/.claude/skills/continuous-learning-v2/hooks/observe.sh\" ] && $HOME/.claude/skills/continuous-learning-v2/hooks/observe.sh post || true"
+          }
+        ]
+      }
+    ],
+
+    "PostCompact": [
+      {
+        "matcher": "manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd $HOME && git add .claude/projects/ && git diff --cached --quiet || git commit -m \"auto: /compact checkpoint $(date '+%Y-%m-%d %H:%M')\" 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Saving memories..."
+          }
+        ]
+      },
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd $HOME && git add .claude/projects/ && git diff --cached --quiet || git commit -m \"auto: auto-compact checkpoint $(date '+%Y-%m-%d %H:%M')\" 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Saving memories (auto-compact)..."
+          }
+        ]
+      }
+    ],
+
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd $HOME && git add .claude/projects/ && git diff --cached --quiet || git commit -m \"auto: session end $(date '+%Y-%m-%d %H:%M')\" 2>/dev/null || true && git push 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}
